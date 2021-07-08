@@ -115,6 +115,6 @@ def test():
 
     output = []
     for path in os.listdir(test_dic_path):
-        output.push(recognize(path, speech2text_model))
+        output.append(recognize(path, speech2text_model))
 
     return output
