@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  asr_streamlt:
+    image: loonfactory/asr-streamlit
+    container_name: asr_streamlt
+    ports:
+      - "80:8516"      
+    volumes:
+      - ./exp:/app/exp
+      - ./data:/app/data
+      - ./test:/app/test
+      - nltk_data:/root/nltk_data      
+    restart: always    
+
+volumes:
+  nltk_data:
+    external: false
