@@ -107,7 +107,7 @@ def hello():
 
     return recognize(filepath, speech2text_model)
 
-@app.route('/test', methods=["run"])
+@app.route('/run', methods=["GET"])
 def test():
     test_dic_path = './test'
     if not os.path.isdir(test_dic_path):
