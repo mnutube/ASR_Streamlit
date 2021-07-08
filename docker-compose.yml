@@ -10,9 +10,12 @@ services:
       - ./exp:/app/exp
       - ./data:/app/data
       - ./test:/app/test
+      - dump_wavs:/app/wavs      
       - nltk_data:/root/nltk_data      
     restart: always    
 
 volumes:
   nltk_data:
+    external: false
+  dump_wavs:
     external: false
