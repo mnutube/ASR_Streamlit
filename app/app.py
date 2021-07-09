@@ -1,14 +1,13 @@
 from espnet2.bin.asr_inference import Speech2Text
 import soundfile
-import sys
 import os
-import re
 import time
 import librosa
 
-from werkzeug.utils import secure_filename
-from flask import Flask, flash, request, redirect, url_for, jsonify
+from flask import Flask, request, g, json
 
+app = Flask(__name__)
+app.secret_key = b'_5#y2L"F43412123fi9Q8z\n\xec]/'
 
 def init_model():
     asr_config = "./exp/asr_train_asr_transformer5.aihub_raw_bpe/config.yaml"
@@ -34,6 +33,12 @@ def init_model():
     return speech2text
 
 
+def get_speech2text_model():
+    if 'speech2text_model' not in g:
+        g.speech2text_model = init_model()
+
+    return g.speech2text_model
+
 def recognize(audio_path, speech2text):
     y, sr = librosa.load(audio_path, mono=True, sr=16000)
     yt, index = librosa.effects.trim(y, top_db=25)
@@ -46,7 +51,7 @@ def recognize(audio_path, speech2text):
     audio_trim = audio[start_trim:end_trim]
     dur_trim = len(audio_trim) / rate
 
-    print("audio : {:.2f} --> {:.2f}".format(dur, dur_trim))
+    print("audio : {:.2f} --> {:.2f}".format( dur, dur_trim))
 
     start = time.time()
     ret = speech2text(audio)  # Return n-best list of recognized results
@@ -78,15 +83,9 @@ def recognize(audio_path, speech2text):
         "audioDuration": dur
     }
 
-
-app = Flask(__name__)
-app.secret_key = b'_5#y2L"F43412123fi9Q8z\n\xec]/'
-speech2text_model = init_model()
-
-
 @app.route('/recognize', methods=["POST"])
-def hello():
-    if 'file' not in request.files:        
+def hello():    
+    if 'file' not in request.files:
         return 'No file part', 400
 
     file = request.files['file']
@@ -94,27 +93,47 @@ def hello():
     file.save(filepath)
 
     try:    
-        return recognize(filepath, speech2text_model)
-    except err:
-        print(err)
+        print(f'recognize: {filepath}')
+        return recognize(filepath, get_speech2text_model())
+    except:
+        print(f'speech recognition failure')
         return 'speech recognition failure', 500
     finally: 
         try:
             os.remove(filepath)
         except:
             print('file remove faild: ' + filepath)
-            
-
-    return recognize(filepath, speech2text_model)
 
 @app.route('/run', methods=["GET"])
 def test():
+    total = 7200
     test_dic_path = './test'
     if not os.path.isdir(test_dic_path):
         return 'The test directory does not exist.', 400
 
     output = []
-    for path in os.listdir(test_dic_path):
-        output.append(recognize(f'{test_dic_path}/{path}', speech2text_model))
+    for filename in os.listdir(test_dic_path):        
+        path = f'{test_dic_path}/{filename}'
+        try:    
+            print(f'recognize: {path}')
+            result = recognize(path, get_speech2text_model())
+            duration = result['audioDuration']
+            print(f'audioDuration {duration}')
+            total -= result["audioDuration"]
+            print(f'remaining audio time: {total}')
+            if total < 0:
+                break
+        except:
+            print(f'Recognition Failure, {path}')
+            result =  {
+                "text": "인식 실패",
+                "elapsedTime": 0,
+                "voiceStartTime": 0,
+                "voiceEndTime": 0,
+                "audioDuration": 0
+            }
+    
+        result['fileName'] = filename
+        output.append(result)
 
-    return output
+    return json.dumps(output)
