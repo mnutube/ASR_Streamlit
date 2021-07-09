@@ -106,7 +106,7 @@ def hello():
 
 @app.route('/run', methods=["GET"])
 def test():
-    total = 7200
+    total = 54000
     test_dic_path = './test'
     if not os.path.isdir(test_dic_path):
         return 'The test directory does not exist.', 400
