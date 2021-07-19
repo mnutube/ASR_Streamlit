@@ -33,12 +33,6 @@ def init_model():
     return speech2text
 
 
-def get_speech2text_model():
-    if 'speech2text_model' not in g:
-        g.speech2text_model = init_model()
-
-    return g.speech2text_model
-
 def recognize(audio_path, speech2text):
     y, sr = librosa.load(audio_path, mono=True, sr=16000)
     yt, index = librosa.effects.trim(y, top_db=25)
@@ -94,7 +88,7 @@ def hello():
 
     try:    
         print(f'recognize: {filepath}')
-        return recognize(filepath, get_speech2text_model())
+        return recognize(filepath, init_model())
     except:
         print(f'speech recognition failure')
         return 'speech recognition failure', 500
@@ -106,23 +100,18 @@ def hello():
 
 @app.route('/run', methods=["GET"])
 def test():
-    total = 54000
     test_dic_path = './test'
     if not os.path.isdir(test_dic_path):
         return 'The test directory does not exist.', 400
 
     output = []
     for filename in os.listdir(test_dic_path):        
-        path = f'{test_dic_path}/{filename}'
+        path = f'{test_dic_path}/{filename}'                 
         try:    
             print(f'recognize: {path}')
-            result = recognize(path, get_speech2text_model())
+            result = recognize(path, init_model())
             duration = result['audioDuration']
             print(f'audioDuration {duration}')
-            total -= result["audioDuration"]
-            print(f'remaining audio time: {total}')
-            if total < 0:
-                break
         except:
             print(f'Recognition Failure, {path}')
             result =  {
